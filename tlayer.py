@@ -48,6 +48,7 @@ class tLayer(MQTTClient):
     featureUpdated = pyqtSignal(object, object)
     
 
+    # Nathan - Avoid static methods.  Normally just have them as normal functions outside of a class
     @staticmethod
     def isTLayer(l):
         if l is None:
@@ -59,6 +60,7 @@ class tLayer(MQTTClient):
             return False
         return l.customProperty(tLayer.kLayerType, 'false') == 'true'
 
+    # Nathan - Avoid static methods.  Normally just have them as normal functions outside of a class
     @staticmethod
     def getBrokerId(l):
         return l.customProperty(tLayer.kBrokerId, -1)
@@ -101,6 +103,7 @@ class tLayer(MQTTClient):
                 Log.debug("Not already a layer")
                 self._prepare(broker, topicType)  # Add Layer properties for broker
         else:
+            # Nathan - Avoid instance() pattern.  Pass the brokers instance into the class if it needs it
             _broker = Brokers.instance().find(self.get(self.kBrokerId))
             if _broker is None:
                 raise BrokerNotFound("No MQTT Broker found when loading Telemetry Layer " + self.layer().name())
@@ -163,13 +166,21 @@ class tLayer(MQTTClient):
         self.updateConnected(True)
         feat = QgsFeature()
         iter = self._layer.getFeatures()
+        # Nathan - Avoid the while pattern. Use for it is much cleaner
+        # also remove the two lines above. No longer needed
+
+        # for feat in self._layer.getFeatures():
         while iter.nextFeature(feat):
             if feat.id() < 0:
                 continue
             try:
+                # Nathan - str conversion isn't needed of topic is already a string in the file
                 topic = str(feat.attribute("topic"))
+                # Nathan - int conversion isn't needed of qos is already a int in the file
                 qos = int(feat.attribute("qos"))
             
+                # Nathan - This might be better and easier to understand:
+                # if qos < 0 or qos > 3:
                 if not qos in range(3):
                     Log.warn("Topic QoS must be beween 0 and 2")
                     continue
@@ -208,6 +219,10 @@ class tLayer(MQTTClient):
 
         feat = QgsFeature()
         iter = self._layer.getFeatures()
+        # Nathan - Avoid the while pattern. Use `for` it is much cleaner
+        # also remove the two lines above. No longer needed with the for loop
+
+        # for feat in self._layer.getFeatures():
         while iter.nextFeature(feat):
             topic = str(feat.attribute("topic"))
             if topic is not None:
@@ -226,9 +241,14 @@ class tLayer(MQTTClient):
         Log.status('TLayer Got ' + msg.topic+" "+str(msg.qos)+" "+str(msg.payload))
         
         try:
+            # Nathan - Are you really sure you need a mutex lock?
             with QMutexLocker(self._mutex):
                 feat = QgsFeature()
                 iter = self._layer.getFeatures()
+                # Nathan - Avoid the while pattern. Use `for` it is much cleaner
+                # also remove the two lines above. No longer needed with the for loop
+
+                # for feat in self._layer.getFeatures():
                 while iter.nextFeature(feat):
                     topic = str(feat.attribute("topic"))
                     key = msg.topic + ':' + str(feat.id())
@@ -241,6 +261,9 @@ class tLayer(MQTTClient):
             #Log.debug("Triggering repaint")
             self.triggerRepaint()
 
+        # Nathan - Avoid catch any exception. Just catch what you can handle
+        # This will also bail on the whole lot if one errors.  That might not be what you want
+        # better to just check the error on update and report which ones failed
         except Exception as e:
             Log.critical("MQTT Client - Error updating features! " + str(e))
             exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -265,6 +288,10 @@ class tLayer(MQTTClient):
     def updateConnected(self, state):
         feat = QgsFeature()
         iter = self._layer.getFeatures()
+        # Nathan - Avoid the while pattern. Use `for` it is much cleaner
+        # also remove the two lines above. No longer needed with the for loop
+
+        # for feat in self._layer.getFeatures():
         while iter.nextFeature(feat):
             self.changeAttributeValue(feat.id(), Constants.connectedIdx, state, False)
 
@@ -302,8 +329,11 @@ class tLayer(MQTTClient):
 
             fids = []
 
+            # Nathan - Not sure you need a mutex lock
             with QMutexLocker(self._mutex):
 
+                # Nathan - Can be shortcut:
+                # if not self._values
                 if len(self._values) == 0:
                     return
                 

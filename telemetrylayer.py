@@ -60,6 +60,7 @@ class TelemetryLayer(QtGui.QDialog, Ui_TelemetryLayer):
     kBrokerSettingsTabId = 0
     kBrokerListTabId = 1
 
+    ## Nathan - Avoid static methods if you can. Just put it outside the class'
     @staticmethod
     def _getQtBoxStateValue(state):
         if eval(str(state)):
@@ -73,15 +74,24 @@ class TelemetryLayer(QtGui.QDialog, Ui_TelemetryLayer):
         self.iface = creator.iface
         self.plugin_dir = creator.plugin_dir
         self._brokerDlg = None
+        # Nathan - Avoid call to instance.  Just make a Brokers instance and keep in
+        # self._brokers like a normal variable
         self._brokers = Brokers.instance()
         self._layerManager = creator.layerManager
         self._setup = False
         self.dockWidget = None
+        # Nathan - Remove the instance() method you don't need this here.
         TelemetryLayer._this = self
 
+        #Nathan = This can be done like the following:
+        #self._brokers.brokersLoaded.connect(self.brokersLoaded)
         self._brokers.brokersLoaded.connect(lambda: self.brokersLoaded())    
+        # Nathan - Don't need pass at the end
         pass
 
+    # Nathan - Avoid this pattern. It's not bad but you don't need it and is confusing.
+    # Just store a variable on the
+    # calling end and reference it like normal
     @staticmethod
     def instance():
         return TelemetryLayer._this
@@ -116,6 +126,8 @@ class TelemetryLayer(QtGui.QDialog, Ui_TelemetryLayer):
         self.dockWidget.setFeatures(QtGui.QDockWidget.DockWidgetClosable)
         self.dockWidget.setWindowTitle(_translate("tlBrokerConfig", "Configure Telemetry Layer", None))
         self.ckShowLog.clicked.connect(self._showLog)
+
+        # Nathan - Use setChecked(bool) to make it easier
         self.ckShowLog.setCheckState(self._getQtBoxStateValue(Log.logDockVisible()))
 
         self.dockWidget.visibilityChanged.connect(self._visibilityChanged)
@@ -125,6 +137,9 @@ class TelemetryLayer(QtGui.QDialog, Ui_TelemetryLayer):
 
         logStates = int(Settings.get('logStates', Log.CRITICAL))
 
+        # Nathan - The checked state conversion isn't needed
+        # Just call setChecked(bool)
+        # Also consider using a QButtonGroup here in order to have only one button pressed at a time.
         self.logCritical.setCheckState(self._getQtBoxStateValue(logStates & Log.CRITICAL))
         self.logInfo.setCheckState(self._getQtBoxStateValue(logStates & Log.INFO))
         self.logWarn.setCheckState(self._getQtBoxStateValue(logStates & Log.WARN))
@@ -134,6 +149,9 @@ class TelemetryLayer(QtGui.QDialog, Ui_TelemetryLayer):
         self._buildBrokerTable()
 
     def checkBrokerConfig(self):
+        # Nathan - Can be done like this:
+        # if not self._brokers.list():
+        # (if not will check for the empty list)
         if len(self._brokers.list()) == 0:
             raise BrokersNotDefined
 
@@ -190,7 +208,10 @@ class TelemetryLayer(QtGui.QDialog, Ui_TelemetryLayer):
 
         tbl.setShowGrid(True)
 
+        # Nathan - Remove this
         row = 0
+        # Nathan - Use:
+        # for row, broker in enumerate(self._brokers.list()):
         for broker in self._brokers.list():
             item = QtGui.QTableWidgetItem(0)
             item.setText(broker.name())
@@ -205,6 +226,7 @@ class TelemetryLayer(QtGui.QDialog, Ui_TelemetryLayer):
             button = QtGui.QPushButton('Delete', self)
             button.clicked.connect(self._callback(broker, Constants.Deleted))
             tbl.setCellWidget(row, 2, button)
+            # Nathan - Not needed when using enumerate
             row += 1
 
     def _callback(self, param, action):
@@ -237,7 +259,8 @@ class TelemetryLayer(QtGui.QDialog, Ui_TelemetryLayer):
         self._apply()
         if self._brokerDlg is None:
             return
-        if self._brokerDlg.mode() == Constants.Create:
+
+            if self._brokerDlg.mode() == Constants.Create:
             self._addBrokerApply()
         elif self._brokerDlg.mode() == Constants.Update:
             self._updateBrokerApply()

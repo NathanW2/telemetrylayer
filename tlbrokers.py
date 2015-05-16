@@ -32,6 +32,7 @@ class tlBrokers(QObject):
     
     """
 
+    # Nathan - Not needed
     _this = None
     brokersLoaded = pyqtSignal(object)
 
@@ -39,6 +40,7 @@ class tlBrokers(QObject):
     kBrokerFile = 'brokerFile'
     kBrokerList = "brokers/list"
 
+    # Nathan - Avoid this pattern.  It is almost never needed
     @staticmethod
     def instance():
         return tlBrokers._this
@@ -54,7 +56,10 @@ class tlBrokers(QObject):
         self._dirtyList = []
         self._defaultFile = os.path.join(pluginDir, self.kDefaultFile)
         self._jsonfile = Settings.get("brokerFile", self._defaultFile)
+
+        # Nathan - Avoid this pattern.  It is almost never needed
         tlBrokers._this = self
+
         QgsProject.instance().readProject.connect(self.load)
 
         self.load()
@@ -68,15 +73,19 @@ class tlBrokers(QObject):
                 qfile.open(QIODevice.ReadOnly)
                 jsonstr = qfile.readData(qfile.size())
                 qfile.close()
+                # Nathan - Avoid all of the above with a simple:
+                # json.loads(open(filename).read())
                 return json.loads(jsonstr)
             else:
                 # no file available
                 Log.debug("Broker file " + filename + " not found!")
+        # Nathan - Don't catch exception if you can avoid it.  Just catch the one you can handle
         except Exception as e:
             Log.critical(e)
 
         self._dirty = False
         return ""
+        # Nathan - Pass isn't needed at the end of a method 
         pass
 
 
@@ -126,6 +135,11 @@ class tlBrokers(QObject):
         if not self._dirty:
             return
         try:
+            # Nathan - All of the below can be done like this:
+            # with open(self._file(), 'w') as f:
+            #     json.dump(f)
+
+            # Nathan - Not needed can be done like above
             qfile = QFile(self._file())
             qfile.open(QIODevice.WriteOnly)
             qfile.writeData(json.dumps(self._brokers))
@@ -140,6 +154,8 @@ class tlBrokers(QObject):
 
 
     def uniq(self):
+        # Nathan - Can be a shortcut if:
+        # if not self._brokers:
         if len(self._brokers) == 0:
             return 1
         return int(max(self._brokers.keys(), key=int)) + 1
@@ -247,6 +263,16 @@ class tlBroker(QObject):
     def set(self, key, value):
         self._properties[key] = value
 
+    # Nathan - Use @property for all of these. Example:
+
+    # @property
+    # def name(self):
+    #     return self._properties['name']
+
+    # @setter.name
+    # def name(self, name):
+    #     self._properties['name'] = name
+    
     def setId(self, id):
         self.set('id', id)
 
